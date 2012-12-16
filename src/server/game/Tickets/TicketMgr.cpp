@@ -20,12 +20,13 @@
 #include "TicketMgr.h"
 #include "DatabaseEnv.h"
 #include "Log.h"
+#include "Language.h"
 #include "WorldPacket.h"
 #include "WorldSession.h"
 #include "Chat.h"
 #include "World.h"
-
-#include "TriniChat/IRCClient.h"
+#include "Player.h"
+#include "Opcodes.h"
 
 inline float GetAge(uint64 t) { return float(time(NULL) - t) / DAY; }
 
@@ -33,45 +34,32 @@ inline float GetAge(uint64 t) { return float(time(NULL) - t) / DAY; }
 // GM ticket
 GmTicket::GmTicket() { }
 
-GmTicket::GmTicket(Player* player, WorldPacket& recv_data) : _createTime(time(NULL)), _lastModifiedTime(time(NULL)), _closedBy(0), _assignedTo(0), _completed(false), _escalatedStatus(TICKET_UNASSIGNED)
+GmTicket::GmTicket(Player* player, WorldPacket& recvData) : _createTime(time(NULL)), _lastModifiedTime(time(NULL)), _closedBy(0), _assignedTo(0), _completed(false), _escalatedStatus(TICKET_UNASSIGNED), _haveTicket(false)
 {
     _id = sTicketMgr->GenerateTicketId();
     _playerName = player->GetName();
     _playerGuid = player->GetGUID();
 
     uint32 mapId;
-    recv_data >> mapId; // Map is sent as UInt32!
+    recvData >> mapId;                      // Map is sent as UInt32!
     _mapId = mapId;
 
-    recv_data >> _posX;
-    recv_data >> _posY;
-    recv_data >> _posZ;
-    recv_data >> _message;
+    recvData >> _posX;
+    recvData >> _posY;
+    recvData >> _posZ;
+    recvData >> _message;
     uint32 needResponse;
-    recv_data >> needResponse;
-    _needResponse = (needResponse == 17); // Requires GM response. 17 = true, 1 = false (17 is default)
-    uint8 unk1;
-    recv_data >> unk1; // Requests further GM interaction on a ticket to which a GM has already responded
-
-    recv_data.rfinish();
-    /*
-    recv_data >> uint32(count); // text lines
-    for (int i = 0; i < count; i++)
-        recv_data >> uint32();
-
-    if (something)
-        recv_data >> uint32();
-    else
-        compressed uint32 + string;
-    */
+    recvData >> needResponse;
+    _needResponse = (needResponse == 17);   // Requires GM response. 17 = true, 1 = false (17 is default)
+    recvData >> _haveTicket;                // Requests further GM interaction on a ticket to which a GM has already responded. Basically means "has a new ticket"
 }
 
 GmTicket::~GmTicket() { }
 
 bool GmTicket::LoadFromDB(Field* fields)
 {
-    //     0       1     2      3          4        5      6     7     8           9            10         11         12        13        14        15
-    // ticketId, guid, name, message, createTime, mapId, posX, posY, posZ, lastModifiedTime, closedBy, assignedTo, comment, completed, escalated, viewed
+    //     0       1     2      3          4        5      6     7     8           9            10         11         12       13        14         15        16        17
+    // ticketId, guid, name, message, createTime, mapId, posX, posY, posZ, lastModifiedTime, closedBy, assignedTo, comment, response, completed, escalated, viewed, haveTicket
     uint8 index = 0;
     _id                 = fields[  index].GetUInt32();
     _playerGuid         = MAKE_NEW_GUID(fields[++index].GetUInt32(), 0, HIGHGUID_PLAYER);
@@ -86,9 +74,11 @@ bool GmTicket::LoadFromDB(Field* fields)
     _closedBy           = fields[++index].GetInt32();
     _assignedTo         = MAKE_NEW_GUID(fields[++index].GetUInt32(), 0, HIGHGUID_PLAYER);
     _comment            = fields[++index].GetString();
+    _response           = fields[++index].GetString();
     _completed          = fields[++index].GetBool();
     _escalatedStatus    = GMTicketEscalationStatus(fields[++index].GetUInt8());
     _viewed             = fields[++index].GetBool();
+    _haveTicket         = fields[++index].GetBool();
     return true;
 }
 
@@ -111,126 +101,12 @@ void GmTicket::SaveToDB(SQLTransaction& trans) const
     stmt->setInt32 (++index, GUID_LOPART(_closedBy));
     stmt->setUInt32(++index, GUID_LOPART(_assignedTo));
     stmt->setString(++index, _comment);
+    stmt->setString(++index, _response);
     stmt->setBool  (++index, _completed);
     stmt->setUInt8 (++index, uint8(_escalatedStatus));
     stmt->setBool  (++index, _viewed);
+    stmt->setBool  (++index, _haveTicket);
 
-    char dest[20];
-   std::string ticketstatusmsg;
-
-   uint32 countOpen = sTicketMgr->GetOpenTicketCount();
-
-   if (countOpen > 1)
-   {
-       ticketstatusmsg += "PRIVMSG ChanServ TOPIC #wowticket ";
-       ticketstatusmsg += "\x03";
-       ticketstatusmsg += "4 ";
-       sprintf(dest, "%d", countOpen);
-       ticketstatusmsg += dest;
-       ticketstatusmsg += " Tickets sind noch offen!";
-       sIRC.SendIRC(ticketstatusmsg);
-   }
-   else if (countOpen == 1)
-   {
-       ticketstatusmsg += "PRIVMSG ChanServ TOPIC #wowticket ";
-       ticketstatusmsg += "\x03";
-       ticketstatusmsg += "4 ";
-       ticketstatusmsg += "1 Ticket ist noch offen!";
-       sIRC.SendIRC(ticketstatusmsg);
-   }
-   else if (countOpen == 0)
-   {
-       ticketstatusmsg += "PRIVMSG ChanServ TOPIC #wowticket ";
-       ticketstatusmsg += "\x03";
-       ticketstatusmsg += "4";
-       ticketstatusmsg += "Es sind keine Tickets mehr offen!";
-       sIRC.SendIRC(ticketstatusmsg);
-   }
-
-   std::string infomsg;
-
-   if (GUID_LOPART(_closedBy))
-   {
-       infomsg += "PRIVMSG #wowticket ";
-       infomsg += "\x03";
-       infomsg += "4Ticket mit ID ";
-       sprintf(dest, "%d", _id);
-       infomsg += dest;
-       infomsg += " von Player ";
-       infomsg += _playerName;
-       infomsg += " (GUID: ";
-       sprintf(dest, "%d", GUID_LOPART(_playerGuid));
-       infomsg += dest;
-       infomsg += ") wurde von Player-GUID: ";
-       sprintf(dest, "%d", GUID_LOPART(_closedBy));
-       infomsg += dest;
-       infomsg += " geschlossen!";
-       sIRC.SendIRC(infomsg);
-   }
-   else
-   {
-       infomsg += "PRIVMSG #wowticket ";
-       infomsg += "\x03";
-       infomsg += "4Player: ";
-       infomsg += _playerName;
-       infomsg += ", Player GUID: ";
-       sprintf(dest, "%d", GUID_LOPART(_playerGuid));
-       infomsg += dest;
-       infomsg += ", Ticket GUID: ";
-       sprintf(dest, "%d", _id);
-       infomsg += dest;
-       infomsg += "; ";
-       infomsg += "\x03";
-       infomsg += "1Map: ";
-       sprintf(dest, "%d", _mapId);
-       infomsg += dest;
-       infomsg += "; X: ";
-       sprintf(dest, "%f", _posX);
-       infomsg += dest;
-       infomsg += "; Y: ";
-       sprintf(dest, "%f", _posY);
-       infomsg += dest;
-       infomsg += "; Z: ";
-       sprintf(dest, "%f", _posZ);
-       infomsg += dest;
-       infomsg += "; GM GUID: ";
-       sprintf(dest, "%d", GUID_LOPART(_assignedTo));
-       infomsg += dest;
-       infomsg += "; CLOSED: ";
-       sprintf(dest, "%d", GUID_LOPART(_closedBy));
-       infomsg += dest;
-       sIRC.SendIRC(infomsg);
-
-       if (_message.length() > 220)
-       {
-           std::string msgpart1;
-           std::string msg1;
-           msgpart1.insert(0, _message, 0, 220);
-           msg1 += "PRIVMSG #wowticket ";
-           msg1 += msgpart1;
-           std::replace( msg1.begin(), msg1.end(), '\n', ' ');
-           sIRC.SendIRC(msg1);
-
-           std::string msgpart2;
-           std::string msg2;
-           msgpart2.insert(0, _message, 220, _message.length() - 220);
-           msg2 += "PRIVMSG #wowticket ";
-           msg2 += msgpart2;
-           std::replace( msg2.begin(), msg2.end(), '\n', ' ');
-           sIRC.SendIRC(msg2);
-       }
-       else
-       {
-           std::string msgpart1;
-           std::string msg1;
-           msgpart1.insert(0, _message, 0, _message.length());
-           msg1 += "PRIVMSG #wowticket ";
-           msg1 += msgpart1;
-           std::replace( msg1.begin(), msg1.end(), '\n', ' ');
-           sIRC.SendIRC(msg1);
-       }
-   }	
-	
     CharacterDatabase.ExecuteOrAppend(trans, stmt);
 }
 
@@ -243,6 +119,10 @@ void GmTicket::DeleteFromDB()
 
 void GmTicket::WritePacket(WorldPacket& data) const
 {
+    data << uint32(GMTICKET_STATUS_HASTEXT);
+    data << uint32(_id);
+    data << _message;
+    data << uint8(_haveTicket);
     data << GetAge(_lastModifiedTime);
     if (GmTicket* ticket = sTicketMgr->GetOldestOpenTicket())
         data << GetAge(ticket->GetLastModifiedTime());
@@ -262,11 +142,24 @@ void GmTicket::SendResponse(WorldSession* session) const
     data << uint32(1);          // responseID
     data << uint32(_id);        // ticketID
     data << _message.c_str();
-    data << _response.c_str();
-    // 3 null strings (unused)
-    data << uint8(0);
-    data << uint8(0);
-    data << uint8(0);
+
+    size_t len = _response.size();
+    char const* s = _response.c_str();
+
+    for (int i = 0; i < 4; i++)
+    {
+        if (len)
+        {
+            size_t writeLen = std::min<size_t>(len, 3999);
+            data.append(s, writeLen);
+
+            len -= writeLen;
+            s += writeLen;
+        }
+
+        data << uint8(0);
+    }
+
     session->SendPacket(&data);
 }
 
@@ -328,6 +221,20 @@ void GmTicket::TeleportTo(Player* player) const
     player->TeleportTo(_mapId, _posX, _posY, _posZ, 0.0f, 0);
 }
 
+void GmTicket::SetChatLog(std::list<uint32> time, std::string const& log)
+{
+    std::stringstream ss(log);
+    std::stringstream newss;
+    std::string line;
+    while (std::getline(ss, line))
+    {
+        newss << secsToTimeString(time.front()) << ": " << line << "\n";
+        time.pop_front();
+    }
+
+    _chatLog = newss.str();
+}
+
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 // Ticket manager
 TicketMgr::TicketMgr() : _status(true), _lastTicketId(0), _lastSurveyId(0), _openTicketCount(0), _lastChange(time(NULL)) { }
@@ -368,8 +275,8 @@ void TicketMgr::LoadTickets()
     PreparedQueryResult result = CharacterDatabase.Query(stmt);
     if (!result)
     {
-        sLog->outString(">> Loaded 0 GM tickets. DB table `gm_tickets` is empty!");
-        sLog->outString();
+        sLog->outInfo(LOG_FILTER_SERVER_LOADING, ">> Loaded 0 GM tickets. DB table `gm_tickets` is empty!");
+
         return;
     }
 
@@ -395,8 +302,8 @@ void TicketMgr::LoadTickets()
         ++count;
     } while (result->NextRow());
 
-    sLog->outString(">> Loaded %u GM tickets in %u ms", count, GetMSTimeDiffToNow(oldMSTime));
-    sLog->outString();
+    sLog->outInfo(LOG_FILTER_SERVER_LOADING, ">> Loaded %u GM tickets in %u ms", count, GetMSTimeDiffToNow(oldMSTime));
+
 }
 
 void TicketMgr::LoadSurveys()
@@ -408,8 +315,8 @@ void TicketMgr::LoadSurveys()
     if (QueryResult result = CharacterDatabase.Query("SELECT MAX(surveyId) FROM gm_surveys"))
         _lastSurveyId = (*result)[0].GetUInt32();
 
-    sLog->outString(">> Loaded GM Survey count from database in %u ms", GetMSTimeDiffToNow(oldMSTime));
-    sLog->outString();
+    sLog->outInfo(LOG_FILTER_SERVER_LOADING, ">> Loaded GM Survey count from database in %u ms", GetMSTimeDiffToNow(oldMSTime));
+
 }
 
 void TicketMgr::AddTicket(GmTicket* ticket)
@@ -470,36 +377,12 @@ void TicketMgr::ShowEscalatedList(ChatHandler& handler) const
 
 void TicketMgr::SendTicket(WorldSession* session, GmTicket* ticket) const
 {
-    uint32 status = GMTICKET_STATUS_DEFAULT;
-    std::string message;
-    if (ticket)
-    {
-        message = ticket->GetMessage();
-        status = GMTICKET_STATUS_HASTEXT;
-    }
-
-    WorldPacket data(SMSG_GMTICKET_GETTICKET, (4 + 4 + (ticket ? message.length() + 1 + 4 + 4 + 4 + 1 + 1 : 0)));
-    data << uint32(status);                         // standard 0x0A, 0x06 if text present
-    data << uint32(ticket ? ticket->GetId() : 0);   // ticketID
+    WorldPacket data(SMSG_GMTICKET_GETTICKET, (ticket ? (4 + 4 + 1 + 4 + 4 + 4 + 1 + 1) : 4));
 
     if (ticket)
-    {
-        data << message.c_str();                    // ticket text
-        data << uint8(0x7);                         // ticket category; why is this hardcoded? does it make a diff re: client?
+        ticket->WritePacket(data);
+    else
+        data << uint32(GMTICKET_STATUS_DEFAULT);
 
-        // we've got the easy stuff done by now.
-        // Now we need to go through the client logic for displaying various levels of ticket load
-        if (ticket)
-            ticket->WritePacket(data);
-        else
-        {
-            // we can't actually get any numbers here...
-            data << float(0);
-            data << float(0);
-            data << float(1);
-            data << uint8(0);
-            data << uint8(0);
-        }
-    }
     session->SendPacket(&data);
 }

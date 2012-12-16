@@ -1174,7 +1174,6 @@ private:
     bool Bind_When_Use;
     bool Bind_Quest_Item;
 
-    bool DisableBeta_PTR_Unused;
     bool DisablePermEnchant;
     bool DisableConjured;
     bool DisableGems;
@@ -1214,6 +1213,8 @@ private:
     uint32 DisableTGsBelowReqSkillRank;
     uint32 DisableTGsAboveReqSkillRank;
 
+    std::set<uint32> DisableItemStore;
+
     //End Filters
 
     AHBConfig AllianceConfig;
@@ -1236,7 +1237,7 @@ public:
     void Update();
     void Initialize();
     void LoadValues(AHBConfig*);
-    void DecrementItemCounts(AuctionEntry* ah, uint32 item_template);
+    void DecrementItemCounts(AuctionEntry* ah, uint32 itemEntry);
     void IncrementItemCounts(AuctionEntry* ah);
     void Commands(uint32, uint32, uint32, char*);
     uint32 GetAHBplayerGUID() { return AHBplayerGUID; };

@@ -15,6 +15,7 @@
 
 #include "AnticheatMgr.h"
 #include "AnticheatScripts.h"
+#include "Language.h"
 #include "MapManager.h"
 
 #define CLIMB_ANGLE 1.9f
@@ -374,7 +375,7 @@ void AnticheatMgr::AnticheatGlobalCommand(ChatHandler* handler)
             uint32 total_reports = fieldsDB[2].GetUInt32();
 
             if (Player* player = sObjectMgr->GetPlayerByLowGUID(guid))
-                handler->PSendSysMessage("Player: %s Average: %f Total Reports: %u",player->GetName(),average,total_reports);
+                handler->PSendSysMessage("Player: %s Average: %f Total Reports: %u",player->GetName().c_str(),average,total_reports);
 
         } while (resultDB->NextRow());
     }
@@ -399,7 +400,7 @@ void AnticheatMgr::AnticheatGlobalCommand(ChatHandler* handler)
             uint32 total_reports = fieldsDB[2].GetUInt32();
 
             if (Player* player = sObjectMgr->GetPlayerByLowGUID(guid))
-                handler->PSendSysMessage("Player: %s Total Reports: %u Average: %f",player->GetName(),total_reports,average);
+                handler->PSendSysMessage("Player: %s Total Reports: %u Average: %f",player->GetName().c_str(),total_reports,average);
 
         } while (resultDB->NextRow());
     }

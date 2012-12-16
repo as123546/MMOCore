@@ -34,6 +34,10 @@ EndContentData */
 
 #include "ScriptPCH.h"
 #include "Vehicle.h"
+#include "ScriptMgr.h"
+#include "ScriptedCreature.h"
+#include "ScriptedGossip.h"
+#include "Player.h"
 
 /*######
 ## npc_royal_historian_archesonus

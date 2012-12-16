@@ -15,10 +15,9 @@
  * with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "ScriptPCH.h"
+#include "ScriptMgr.h"
+#include "InstanceScript.h"
 #include "vault_of_archavon.h"
-#include "OutdoorPvPMgr.h"
-#include "OutdoorPvPWG.h"
 
 /* Vault of Archavon encounters:
 1 - Archavon the Stone Watcher event
@@ -48,16 +47,6 @@ class instance_archavon : public InstanceMapScript
                 KoralonDeath = 0;
             }
 
-            void OnPlayerEnter(Player *player)
-            {
-                if (sWorld->getBoolConfig(CONFIG_OUTDOORPVP_WINTERGRASP_ENABLED))
-                {
-                    OutdoorPvPWG *pvpWG = (OutdoorPvPWG*)sOutdoorPvPMgr->GetOutdoorPvPToZoneId(4197);
-                    if (pvpWG && !player->isGameMaster() && player->GetTeamId() != pvpWG->getDefenderTeam())
-                        player->CastSpell(player, SPELL_TELEPORT_FORTRESS, true);
-                }
-            }
-
             void OnCreatureCreate(Creature* creature)
             {
                 switch (creature->GetEntry())
@@ -73,7 +62,7 @@ class instance_archavon : public InstanceMapScript
                 }
             }
 
-            uint64 GetData64(uint32 identifier)
+            uint64 GetData64(uint32 identifier) const
             {
                 switch (identifier)
                 {

@@ -20,12 +20,13 @@
 #    SERVER RATES
 #    AUTO BROADCAST
 #    BATTLEGROUND CONFIG
+#    BATTLEFIELD CONFIG
 #    ARENA CONFIG
 #    NETWORK CONFIG
 #    CONSOLE AND REMOTE ACCESS
 #    CHARACTER DELETE OPTIONS
 #    CUSTOM SERVER OPTIONS
-#    WINTERGRASP BATTLE CONFIGURATION
+#    LOGGING SYSTEM SETTINGS
 #
 ###################################################################################################
 
@@ -49,7 +50,7 @@
 #
 #    RealmID
 #        Description: ID of the Realm using this config.
-#        Important:   RealmID must match the realmlist inside the realmd database.
+#        Important:   RealmID must match the realmlist inside the auth database.
 #        Default:     1
 
 RealmID = 1
@@ -174,7 +175,7 @@ Compression = 1
 #    PlayerLimit
 #        Description: Maximum number of players in the world. Excluding Mods, GMs and Admins.
 #          Important: If you want to block players and only allow Mods, GMs or Admins to join the
-#                     server, use the DB field "realmd.realmlist.allowedSecurityLevel".
+#                     server, use the DB field "auth.realmlist.allowedSecurityLevel".
 #            Default: 100 - (Enabled)
 #                     1+  - (Enabled)
 #                     0   - (Disabled, No limit)
@@ -399,322 +400,19 @@ PersistentCharacterCleanFlags = 0
 #
 #    PidFile
 #        Description: World daemon PID file
-#        Example:     "./worldd.pid" - (Enabled)
-#        Default:     ""             - (Disabled)
+#        Example:     "./world.pid" - (Enabled)
+#        Default:     ""            - (Disabled)
 
 PidFile = ""
 
 #
-#    LogLevel
-#        Description: Server console level of logging
-#        Default:     1 - (Basic)
-#                     0 - (Minimum)
-#                     2 - (Detail)
-#                     3 - (Full/Debug)
-
-LogLevel = 1
-
-#
-#    LogFile
-#        Description: Log file for main server log.
-#        Default:     "Server.log" - (Enabled)
-#                     ""           - (Disabled)
-
-LogFile = "Server.log"
-
-#
-#    LogTimestamp
-#        Description: Append timestamp to the server log file name.
-#                     Logname_YYYY-MM-DD_HH-MM-SS.Ext for Logname.Ext
-#        Default:     0 - (Disabled)
-#                     1 - (Enabled)
-
-LogTimestamp = 0
-
-#
-#    LogFileLevel
-#        Description: Server file level of logging
-#        Default:     0 - (Minimum)
-#                     1 - (Basic)
-#                     2 - (Detail)
-#                     3 - (Full/Debug)
-
-LogFileLevel = 0
-
-#
-#    Debug Log Mask
-#        Description: Bitmask that determines which debug log output (level 3)
-#                     will be logged.
-#        Possible flags:
-#                   1 - Anything related to units that doesn't fit in other
-#                          categories.
-#                   2 - Anything related to pets.
-#                   4 - Anything related to vehicles.
-#                   8 - Anything related to C++ AI, instance scripts, etc.
-#                  16 - Anything related to DB AI, such as SAI, EAI, CreatureAI
-#                  32 - Anything related to DB map scripts
-#                  64 - Anything related to network input/output,
-#                        such as packet handlers and netcode logs
-#                 128 - Anything related to the spellsystem and aurasystem
-#                 256 - Anything related to the achievement system
-#                 512 - Anything related to the condition system
-#                1024 - Anything related to the pool system
-#                2048 - Anything related to the auction house
-#                4096 - Anything related to arena's and battlegrounds
-#                8192 - Anything related to outdoor PVP
-#               16384 - Anything related to the chat system
-#               32768 - Anything related to the LFG system
-#               65536 - Anything related to maps, instances (not scripts),
-#                       grids, cells, visibility, etc.
-#              131072 - Anything related to player loading from DB
-#                      (Player::_LoadXXX functions)
-#              262144 - Anything related to items
-#              524288 - Anything related to player skills
-#                      (do not confuse with spells)
-#             1048576 - Anything related to loot
-#             2097152 - Anything related to guilds
-#             4194304 - Anything related to transports
-#             8388608 - Anything related to Warden anti cheat
-#
-#                       Simply add the values together to create a bitmask.
-#                       For more info see enum DebugLogFilters in Log.h
-#
-#             Default: 0 (nothing)
-
-DebugLogMask = 0
-
-#
-#    WorldLogFile
-#        Description: Packet logging file for the world server.
-#        Example:     "World.log" - (Enabled)
+#    PacketLogFile
+#        Description: Binary packet logging file for the world server.
+#                     Filename extension must be .bin to be parsable with WowPacketParser.
+#        Example:     "World.bin" - (Enabled)
 #        Default:     ""          - (Disabled)
 
-WorldLogFile = ""
-
-#
-#    DBErrorLogFile
-#        Description: Log file for database errors.
-#        Default:     "DBErrors.log" - (Enabled)
-#                     ""             - (Disabled)
-
-DBErrorLogFile = "DBErrors.log"
-
-#
-#    CharLogFile
-#        Description: Log file for character operations
-#        Default:     "Char.log" - (Enabled)
-#                     ""         - (Disabled)
-
-CharLogFile = "Char.log"
-
-#
-#    CharLogTimestamp
-#        Description: Append timestamp to the character log file name.
-#                     Logname_YYYY-MM-DD_HH-MM-SS.Ext for Logname.Ext
-#        Default:     0 - (Disabled)
-#                     1 - (Enabled)
-
-CharLogTimestamp = 0
-
-#
-#    CharLogDump
-#        Description: Write a character dump in the CharLogFile before deleting it.
-#                     For restoration, copy character data from log file starting from
-#                     line == START DUMP == to line == END DUMP == (exclusive)
-#                     and load it using the "pdump load" command.
-#        Default:     0 - (Disabled)
-#                     1 - (Enabled)
-
-CharLogDump = 0
-
-#
-#    CharLogDump.Separate
-#        Description: Write character dump to separate files files rather than adding it to the
-#                     CharLogFile.
-#        Default:     0 - (Disabled)
-#                     1 - (Enabled)
-
-CharLogDump.Separate = 0
-
-#
-#    CharLogDump.SeparateDir
-#        Description: Write dump files into the sub folder within the log folder.
-#        Example:     "chardumps" - (Enabled)
-#        Default:     ""         - (Disabled)
-
-CharLogDump.SeparateDir = ""
-
-#
-#    GmLogFile
-#        Description: Log file for gamemaster commands.
-#        Default:     "GM.log" - (Enabled)
-#                     ""       - (Disabled)
-
-GmLogFile = "GM.log"
-
-#
-#    GmLogTimestamp
-#        Description: Append timestamp to the gamemaster log file name.
-#                     Logname_YYYY-MM-DD_HH-MM-SS.Ext for Logname.Ext
-#        Default:     0 - (Disabled)
-#                     1 - (Enabled)
-
-GmLogTimestamp = 0
-
-#
-#    GmLogPerAccount
-#        Description: Create a log file per gamemaster account.
-#        Important:   Logs not created if GmLogFile is not set.
-#        Default:     0 - (Disabled)
-#                     1 - (Enabled)
-
-GmLogPerAccount = 0
-
-#
-#    RaLogFile
-#        Description: Log file for Remote Access commands.
-#        Default:     "RA.log" - (Enabled)
-#                     ""       - (Disabled)
-
-RaLogFile = "RA.log"
-
-#
-#    ArenaLogFile
-#        Description: Log file for arena fights and arena team creations.
-#        Example:     "Arena.log" - (Enabled)
-#        Default:     ""          - (Disabled)
-
-ArenaLogFile = ""
-
-#
-#    ArenaLog.ExtendedInfo
-#        Description: Include extended info to ArenaLogFile for each player after rated arena
-#                     matches (guid, name, team, IP, healing/damage done, killing blows).
-#        Default:     0 - (Disabled)
-#                     1 - (Enabled)
-
-ArenaLog.ExtendedInfo = 0
-
-#
-#    SQLDeveloperLogFile
-#        Description: Log file for core-generated SQL queries/dumps
-#        Example:     "SQLDev.log"    - (Enabled)
-#        Default:      ""             - (Disabled)
-
-SQLDeveloperLogFile = ""
-
-#
-#    SQLDriverLogFile
-#        Description: Log file for SQL driver events.
-#        Example:     "SQLDriver.log" - (Enabled)
-#        Default:      ""             - (Disabled)
-
-SQLDriverLogFile = ""
-
-#
-#    SQLDriverQueryLogging
-#        Description: Log SQL queries to the SQLDriverLogFile and console.
-#        Default:     0 - (Disabled, Query errors only)
-#                     1 - (Enabled, Full query logging - may have performance impact)
-
-SQLDriverQueryLogging = 0
-
-#
-#    LogColors
-#        Description: Colors for log messages (Format: "normal basic detail debug").
-#        Colors:      0  - Black
-#                     1  - Red
-#                     2  - Green
-#                     3  - Brown
-#                     4  - Blue
-#                     5  - Magenta
-#                     6  - Cyan
-#                     7  - Grey
-#                     8  - Yellow
-#                     9  - Lred
-#                     10 - Lgreen
-#                     11 - Lblue
-#                     12 - Lmagenta
-#                     13 - Lcyan
-#                     14 - White
-#        Example:     "13 11 9 5" - (Enabled)
-#        Default:     ""          - (Disabled)
-
-LogColors = ""
-
-#
-#    EnableLogDB
-#        Description: Write log messages to database (LogDatabaseInfo).
-#        Default:     0 - (Disabled)
-#                     1 - (Enabled)
-
-EnableLogDB = 0
-
-#
-#    DBLogLevel
-#        Description: Log level of databases logging.
-#        Default:     2 - (Detail)
-#                     0 - (Minimum)
-#                     1 - (Basic)
-#                     3 - (Full/Debug)
-
-DBLogLevel = 2
-
-#
-#    LogDB.Char
-#        Description: Log character operations to database.
-#        Default:     0 - (Disabled)
-#                     1 - (Enabled)
-
-LogDB.Char = 0
-
-#
-#    LogDB.GM
-#        Description: Log gamemaster commands to database.
-#        Default:     0 - (Disabled)
-#                     1 - (Enabled)
-
-LogDB.GM = 0
-
-#
-#    LogDB.RA
-#        Description: Log remote access events to database.
-#        Default:     0 - (Disabled)
-#                     1 - (Enabled)
-
-LogDB.RA = 0
-
-#
-#    LogDB.World
-#        Description: Log world server packets to database.
-#        Default:     0 - (Disabled)
-#                     1 - (Enabled, May have performance impact)
-
-LogDB.World = 0
-
-#
-#    LogDB.Chat
-#        Description: Log chat messages to database.
-#        Default:     0 - (Disabled)
-#                     1 - (Enabled)
-
-LogDB.Chat = 0
-
-
-#    ChatLogFile
-#        Description: Log file for chat logs.
-#        Default:     "Chat.log" - (Enabled)
-#                     ""         - (Disabled)
-
-ChatLogFile = "Chat.log"
-
-#    ChatLogTimestamp
-#        Description: Append timestamp to the chat log file name.
-#                     Logname_YYYY-MM-DD_HH-MM-SS.Ext for Logname.Ext
-#        Default:     0 - (Disabled)
-#                     1 - (Enabled)
-
-ChatLogTimestamp = 0
+PacketLogFile = ""
 
 #
 #    ChatLogs.Channel
@@ -1277,6 +975,14 @@ Quests.IgnoreAutoComplete = 0
 Guild.EventLogRecordsCount = 100
 
 #
+#    Guild.ResetHour
+#        Description: Hour of the day when the daily cap resets occur.
+#        Range:       0-23
+#        Default:     6 - (06:00 AM)
+
+Guild.ResetHour = 6
+
+#
 #    Guild.BankEventLogRecordsCount
 #        Description: Number of log entries for guild bank events that are stored per guild. Old
 #                     entries will be overwritten if the number of log entries exceed the
@@ -1421,12 +1127,15 @@ Command.LookupMaxResults = 0
 AllowTickets = 1
 
 #
-#     DungeonFinder.Enable
+#     DungeonFinder.OptionsMask
 #        Description: Dungeon and raid finder system.
-#        Default:     1 - (Enabled)
-#                     0 - (Disabled)
+#        Value is a bitmask consisting of:
+#           LFG_OPTION_ENABLE_DUNGEON_FINDER = 1,     Enable the dungeon finder browser
+#           LFG_OPTION_ENABLE_RAID_BROWSER   = 2,     Enable the raid browser
+#        Default:     1
 
-DungeonFinder.Enable = 1
+DungeonFinder.OptionsMask = 1
+
 
 #
 #   DBC.EnforceItemAttributes
@@ -1503,7 +1212,7 @@ Warden.ClientCheckHoldOff = 30
 #
 #    Warden.ClientCheckFailAction
 #        Description: Default action being taken if a client check failed. Actions can be
-#                     overwritten for each single check via warden_action table in characters 
+#                     overwritten for each single check via warden_action table in characters
 #                     database.
 #        Default:     0 - (Disabled, Logging only)
 #                     1 - (Kick)
@@ -1532,6 +1241,14 @@ Warden.BanDuration = 86400
 #                     0 - (Disabled)
 
 AllowTwoSide.Accounts = 1
+
+#
+#    AllowTwoSide.Interaction.Calendar
+#        Description: Allow calendar invites between factions.
+#        Default:     0 - (Disabled)
+#                     1 - (Enabled)
+
+AllowTwoSide.Interaction.Calendar = 0
 
 #
 #    AllowTwoSide.Interaction.Chat
@@ -2064,17 +1781,17 @@ Visibility.GroupMode = 1
 #    Visibility.Distance.Instances
 #    Visibility.Distance.BGArenas
 #        Description: Visibility distance to see other players or gameobjects.
-#                     Visibility on continents on retail ~90 yards. In BG/Arenas ~180.
-#                     For instances default ~120.
-#                     Max limited by active player zone: ~ 333
+#                     Visibility on continents on retail ~90 yards. In BG/Arenas ~533.
+#                     For instances default ~170.
+#                     Max limited by grid size: 533.33333
 #                     Min limit is max aggro radius (45) * Rate.Creature.Aggro
 #        Default:     90  - (Visibility.Distance.Continents)
-#                     120 - (Visibility.Distance.Instances)
-#                     180 - (Visibility.Distance.BGArenas)
+#                     170 - (Visibility.Distance.Instances)
+#                     533 - (Visibility.Distance.BGArenas)
 
 Visibility.Distance.Continents = 90
-Visibility.Distance.Instances = 120
-Visibility.Distance.BGArenas = 180
+Visibility.Distance.Instances = 170
+Visibility.Distance.BGArenas = 533
 
 #
 #    Visibility.Notify.Period.OnContinents
@@ -2300,9 +2017,9 @@ Rate.MoveSpeed = 1
 
 #
 #    Rate.InstanceResetTime
-#        Description: Multiplier for the rate between global raid/heroic instance resets 
-#                     (dbc value). Higher value increases the time between resets, 
-#                     lower value lowers the time, you need clean instance_reset in 
+#        Description: Multiplier for the rate between global raid/heroic instance resets
+#                     (dbc value). Higher value increases the time between resets,
+#                     lower value lowers the time, you need clean instance_reset in
 #                     characters db in order to let new values work.
 #        Default:     1
 
@@ -2544,6 +2261,62 @@ Battleground.Random.ResetHour = 6
 ###################################################################################################
 
 ###################################################################################################
+# BATTLEFIELD CONFIG
+#
+#     Wintergrasp.Enable
+#         Description: Enable the Wintergrasp battlefield.
+#         Default:     0 - (Disabled)
+#                      1 - (Enabled, Experimental as of still being in development)
+
+Wintergrasp.Enable = 0
+
+#
+#     Wintergrasp.PlayerMax
+#         Description: Maximum number of players allowed in Wintergrasp.
+#         Default:     100
+
+Wintergrasp.PlayerMax = 100
+
+#
+#     Wintergrasp.PlayerMin
+#         Description: Minimum number of players required for Wintergrasp.
+#         Default:     0
+
+Wintergrasp.PlayerMin = 0
+
+#
+#     Wintergrasp.PlayerMinLvl
+#         Description: Required character level for the Wintergrasp battle.
+#         Default:     77
+
+Wintergrasp.PlayerMinLvl = 77
+
+#
+#     Wintergrasp.BattleTimer
+#         Description: Time (in minutes) for the Wintergrasp battle to last.
+#         Default:     30
+
+Wintergrasp.BattleTimer = 30
+
+#
+#     Wintergrasp.NoBattleTimer
+#         Description: Time (in minutes) between Wintergrasp battles.
+#         Default:     150
+
+Wintergrasp.NoBattleTimer = 150
+
+#
+#     Wintergrasp.CrashRestartTimer
+#         Description: Time (in minutes) to delay the restart of Wintergrasp if the world server
+#                      crashed during a running battle.
+#         Default:     10
+
+Wintergrasp.CrashRestartTimer = 10
+
+#
+###################################################################################################
+
+###################################################################################################
 # ARENA CONFIG
 #
 #    Arena.MaxRatingDifference
@@ -2561,6 +2334,13 @@ Arena.MaxRatingDifference = 150
 #                     0      - (Disabled)
 
 Arena.RatingDiscardTimer = 600000
+
+#
+#    Arena.RatedUpdateTimer
+#        Description: Time (in milliseconds) between checks for matchups in rated arena
+#        Default:     5000 - (5 seconds)
+
+Arena.RatedUpdateTimer = 5000
 
 #
 #    Arena.AutoDistributePoints
@@ -2621,6 +2401,15 @@ Arena.ArenaStartPersonalRating = 0
 #        Default:     1500
 
 Arena.ArenaStartMatchmakerRating = 1500
+
+#
+#    ArenaLog.ExtendedInfo
+#        Description: Include extended info to ArenaLogFile for each player after rated arena
+#                     matches (guid, name, team, IP, healing/damage done, killing blows).
+#        Default:     0 - (Disabled)
+#                     1 - (Enabled)
+
+ArenaLog.ExtendedInfo = 0
 
 #
 ###################################################################################################
@@ -3280,117 +3069,197 @@ Anticheat.Ban = 1
 
 
 ###################################################################################################
-#   OutdoorPvP.Wintergrasp.Enabled
-#       Determines whether the Wintergrasp battle is enabled or not.
-#       Default: 1 = Enable
-#                0 = Disable
-
-OutdoorPvP.Wintergrasp.Enabled = 1
 #
-#   OutdoorPvP.Wintergrasp.SaveState.Period
-#      Interval (in milliseconds) of Save Wintergrasp State Data to restore it after crash/shutdown/restart
-#      Default (60000 milliseconds)
-#      Warning:  Do not set it less 1 second!
+#  LOGGING SYSTEM SETTINGS
+#
+#  Appender config values: Given a appender "name"
+#    Appender.name
+#        Description: Defines 'where to log'
+#        Format:      Type,LogLevel,Flags,optional1,optional2
+#
+#                     Type
+#                         0 - (None)
+#                         1 - (Console)
+#                         2 - (File)
+#                         3 - (DB)
+#
+#                     LogLevel
+#                         0 - (Disabled)
+#                         1 - (Trace)
+#                         2 - (Debug)
+#                         3 - (Info)
+#                         4 - (Warn)
+#                         5 - (Error)
+#                         6 - (Fatal)
+#
+#                     Flags:
+#                         0 - None
+#                         1 - Prefix Timestamp to the text
+#                         2 - Prefix Log Level to the text
+#                         4 - Prefix Log Filter type to the text
+#                         8 - Append timestamp to the log file name. Format: YYYY-MM-DD_HH-MM-SS (Only used with Type = 2)
+#                        16 - Make a backup of existing file before overwrite (Only used with Mode = w)
+#
+#                     Colors (read as optional1 if Type = Console)
+#                         Format: "fatal error warn info debug trace"
+#                         0 - BLACK
+#                         1 - RED
+#                         2 - GREEN
+#                         3 - BROWN
+#                         4 - BLUE
+#                         5 - MAGENTA
+#                         6 - CYAN
+#                         7 - GREY
+#                         8 - YELLOW
+#                         9 - LRED
+#                        10 - LGREEN
+#                        11 - LBLUE
+#                        12 - LMAGENTA
+#                        13 - LCYAN
+#                        14 - WHITE
+#                         Example: "13 11 9 5 3 1"
+#
+#                     File: Name of the file (read as optional1 if Type = File)
+#                         Allows to use one "%s" to create dynamic files
+#
+#                     Mode: Mode to open the file (read as optional2 if Type = File)
+#                          a - (Append)
+#                          w - (Overwrite)
+#
 
-OutdoorPvP.Wintergrasp.SaveState.Period = 60000
+Appender.Console=1,3,32
+Appender.Server=2,3,15,server.log
+Appender.GM=2,3,7,gm_%s.log,a
+Appender.SQL=2,2,15,sql.log
+Appender.DBErrors=2,5,15,db_errors.log
+Appender.Char=2,2,15,characters.log
+Appender.RA=2,2,15,ra.log
+Appender.Arenas=2,1,15,arena.log
+Appender.SQLDev=2,2,15,SQLDev.log
+Appender.SQLDriver=2,2,15,SQLDriver.log
+Appender.Warden=2,5,15,warden.log
+Appender.Chat=2,1,15,chat.log
 
-#   OutdoorPvP.Wintergrasp.StartTime
-#       The start time of the first battle after server starts (in minutes)
-#       Default: 30
+#    Appenders
+#        Description: List of Appenders to read from config
+#                     (Using spaces as separator).
+#        Default:     "Console Server GM DBErrors Char RA Warden Chat"
 
-OutdoorPvP.Wintergrasp.StartTime = 30
+Appenders=Console Server DBErrors Warden Arenas Char GM RA Chat
 
-#   OutdoorPvP.Wintergrasp.BattleTime
-#       Time limit of a battle (in minutes)
-#       Default: 30
+#  Logger config values: Given a logger "name"
+#    Logger.name
+#        Description: Defines 'What to log'
+#        Format:      Type,LogLevel,AppenderList
+#                     Type
+#                         0 - Default. Each type that has no config will
+#                             rely on this one. Core will create this logger
+#                             (disabled) if it's not configured
+#                         1 - Units that doesn't fit in other categories
+#                         2 - Pets
+#                         3 - Vehicles
+#                         4 - C++ AI, instance scripts, etc.
+#                         5 - DB AI, such as SAI, EAI, CreatureAI
+#                         6 - DB map scripts
+#                         7 - Network input/output,
+#                             such as packet handlers and netcode logs
+#                         8 - Spellsystem and aurasystem
+#                         9 - Achievement system
+#                        10 - Condition system
+#                        11 - Pool system
+#                        12 - Auction house
+#                        13 - Arena's and battlegrounds
+#                        14 - Outdoor PVP
+#                        15 - Chat system
+#                        16 - LFG system
+#                        17 - Maps, instances (not scripts),
+#                             grids, cells, visibility, etc.
+#                        18 - Player that doesn't fit in other categories.
+#                        19 - Player loading from DB
+#                             (Player::_LoadXXX functions)
+#                        20 - Items
+#                        21 - Player skills (do not confuse with spells)
+#                        22 - Player chat logs
+#                        23 - loot
+#                        24 - guilds
+#                        25 - transports
+#                        26 - SQL. DB errors
+#                        27 - GM Commands
+#                        28 - Remote Access Commands
+#                        29 - Warden
+#                        30 - Authserver
+#                        31 - Worldserver
+#                        32 - Game Events
+#                        33 - Calendar
+#                        34 - Character (Exclusive to log login, logout, create, rename)
+#                        35 - Arenas
+#                        36 - SQL Driver
+#                        37 - SQL Dev
+#                        38 - Player Dump
+#                        39 - Battlefield
+#                        40 - Server Loading
+#                        41 - Opcodes (just id and name sent / received)
+#                        42 - SOAP
+#
+#                     LogLevel
+#                         0 - (Disabled)
+#                         1 - (Trace)
+#                         2 - (Debug)
+#                         3 - (Info)
+#                         4 - (Warn)
+#                         5 - (Error)
+#                         6 - (Fatal)
+#
+#                     AppenderList: List of appenders linked to logger
+#                     (Using spaces as separator).
+#
 
-OutdoorPvP.Wintergrasp.BattleTime = 30
-
-#   OutdoorPvP.Wintergrasp.Interval
-#       Interval between battles (in minutes)
-#       Default: 150
-
-OutdoorPvP.Wintergrasp.Interval = 150
-
-#   OutdoorPvP.Wintergrasp.CustomHonorRewards
-#       Defines whether custom honor rewards should be given to player
-#        for partaking in the Wintergrasp Battle.
-#        Default: 0 = Disable
-#                 1 = Enable
-
-OutdoorPvP.Wintergrasp.CustomHonorRewards = 0
-
-#   OutdoorPvP.Wintergrasp.CustomHonorBattleWin
-#       Defines the amount of honor points that should be given to the
-#        team winning the Wintergrasp Battle.
-#       Requires OutdoorPvP.Wintergrasp.CustomHonorRewards = 1.
-#       Default: 3000
-
-OutdoorPvP.Wintergrasp.CustomHonorBattleWin = 3000
-
-#   OutdoorPvP.Wintergrasp.CustomHonorBattleLose
-#       Defines the amount of honor points that should be given to the
-#        team losing the Wintergrasp Battle.
-#       Requires OutdoorPvP.Wintergrasp.CustomHonorRewards = 1.
-#       Default: 1250
-
-OutdoorPvP.Wintergrasp.CustomHonorBattleLose = 1250
-
-#   OutdoorPvP.Wintergrasp.CustomHonorDamageTower
-#       Defines the amount of honor points that should be given to the
-#        team for damaging a tower.
-#       Requires OutdoorPvP.Wintergrasp.CustomHonorRewards = 1.
-#       Default: 750
-
-OutdoorPvP.Wintergrasp.CustomHonorDamageTower = 750
-
-#   OutdoorPvP.Wintergrasp.CustomHonorDestroyedTower
-#       Defines the amount of honor points that should be given to the
-#        team for destroying a tower.
-#       Requires OutdoorPvP.Wintergrasp.CustomHonorRewards = 1.
-#       Default: 750
-
-OutdoorPvP.Wintergrasp.CustomHonorDestroyedTower = 750
-
-#   OutdoorPvP.Wintergrasp.CustomHonorDamagedBuilding
-#       Defines the amount of honor points that should be given to the
-#        team for damaged buildings after the battle.
-#       Requires OutdoorPvP.Wintergrasp.CustomHonorRewards = 1.
-#       Default: 750
-
-OutdoorPvP.Wintergrasp.CustomHonorDamagedBuilding = 750
-
-#   OutdoorPvP.Wintergrasp.CustomHonorIntactBuilding
-#      Defines the amount of honor points that should be given to the
-#        team for intact buildings after the battle.
-#       Requires OutdoorPvP.Wintergrasp.CustomHonorRewards = 1.
-#       Default: 1500
-
-OutdoorPvP.Wintergrasp.CustomHonorIntactBuilding = 1500
-
-#   OutdoorPvP.Wintergrasp.Antifarm.Enable
-#		Enable or Disable antifarm system
-#       Prevents start WG battle event if there are too low players (see options bellow)
-#       Default: 0 - Disabled
-#                1 - Enabled
-
-OutdoorPvP.Wintergrasp.Antifarm.Enable = 0
-
-#   OutdoorPvP.Wintergrasp.Antifarm.Atk
-#		Min count of attackers for antifarm
-#              (Default: 5)
-
-OutdoorPvP.Wintergrasp.Antifarm.Atk = 5
-
-#   OutdoorPvP.Wintergrasp.Antifarm.Def
-#		Min count of defenders for antifarm
-#              (Default: 5)
-
-OutdoorPvP.Wintergrasp.Antifarm.Def = 5
+Logger.Root=0,5,Console Server
+Logger.Units=1,3,Console Server
+Logger.Pets=2,3,Console Server
+Logger.Vehicles=3,3,Console Server
+Logger.TCSR=4,3,Console Server
+Logger.AI=5,3,Console Server
+Logger.MapScripts=6,3,Console Server
+Logger.NetWork=7,3,Console Server
+Logger.Spells=8,3,Console Server
+Logger.Achievements=9,3,Console Server
+Logger.Conditions=10,3,Console Server
+Logger.Pool=11,3,Console Server
+Logger.AuctionHouse=12,3,Console Server
+Logger.Battlegrounds=13,3,Console Server
+Logger.OutdoorPvP=14,3,Console Server
+Logger.ChatSystem=15,3,Console Server
+Logger.LFG=16,3,Console Server
+Logger.Maps=17,3,Console Server
+Logger.Player=18,3,Console Server
+Logger.PlayerLoading=19,3,Console Server
+Logger.PlayerItems=20,3,Console Server
+Logger.PlayerSkills=21,3,Console Server
+Logger.PlayerChat=22,2,Chat
+Logger.Loot=23,3,Console Server
+Logger.Guilds=24,3,Console Server
+Logger.Transports=25,3,Console Server
+Logger.SQL=26,5,DBErrors
+Logger.GM=27,3,Console Server GM
+Logger.RA=28,3,RA
+Logger.Warden=29,3,Warden
+Logger.Authserver=30,3,Console Server
+Logger.Worldserver=31,3,Console Server
+Logger.GameEvents=32,3,Console Server
+Logger.Calendar=33,3,Console Server
+Logger.Character=34,2,Char
+Logger.Arenas=35,2,Arenas
+Logger.SQLDriver=36,5,SQLDriver
+Logger.SQLDev=37,3,SQLDev
 
 #
-###################################################################################################
+#    Loggers
+#        Description: List of Loggers to read from config
+#                     (Using spaces as separator).
+#        Default:     "Root Chat DBErrors GM RA Warden Character Load"
 
+Loggers=Root Chat DBErrors GM RA Warden Character Load WorldServer
 
 ##########################################################
 # Enable or Disable Primary Professions
@@ -3625,282 +3494,3 @@ Accounts.AutoDeleteIntervalEnable = 0
 # Default value: 6
 
 Accounts.AutoDeleteIntervalMonths = 6
-
-###################################################################################################
-# TriniChat IRC BOT For Trinity Core
-###################################################################################################
-# irc.active
-#     Enable TriniChat Addon
-#     Default: 1 - Enable
-#              0 - Disable
-#
-
-irc.active = 1
-
-#
-# irc.icc
-#     IRC connect code
-#     Default: 001 - Welcome To Network msg
-#              375 - Beginning Of MOTD
-#              376 - End Of MOTD
-#
-
-irc.icc = 001
-
-#
-# irc.host
-#     IRC server to have TriniChat connect to
-#
-
-irc.host = "myhost.com"
-
-#
-# irc.port
-#     IRC server port to use
-#
-
-irc.port = "8748"
-
-#
-# irc.user
-#     The username to have TriniChat use to connect to the IRC server
-#
-# irc.nick
-#     IRC nickname to be used by the bot
-#
-# irc.pass
-#     The password to be used to identify to NickServ (IRC NickName Enforcement Services)
-#
-
-irc.user = "IRC_USER"
-irc.nick = "IRC_NICK"
-irc.pass = "IRC_PW"
-
-#
-# irc.auth
-#     IRC Authentication Method
-#     Default: 0 - Disable
-#              1 - NickServ - Normal Method - PRIVMSG NickServ :IDENTIFY Password
-#              2 - NickServ - Alternate Method To Identify To A Different Nick - PRIVMSG NickServ :IDENTIFY irc.auth.nick Password
-#              3 - QuakeNet - Normal Method - PRIVMSG Q@CServe.quakenet.org :AUTH irc.nick Password
-#              4 - QuakeNet - Alternate Method To Identify To A Different Nick - PRIVMSG Q@CServe.quakenet.org :AUTH irc.auth.nick Password
-#
-# irc.auth.nick
-#     IRC Nickname to use if Auth method 2 or 4 is used
-#
-
-irc.auth = 1
-irc.auth.nick = "IRC_AUTH_NICK"
-
-#
-# irc.ldef
-#     Leave a defined IRC channel on server connect
-#     Default: 0 - Disable
-#              1 - Enable
-#
-# irc.defchan
-#     IRC channel to leave on server connect if irc.ldef is on
-#
-
-irc.ldef = 0
-irc.defchan = "lobby"
-
-#
-# irc.wct
-#     Time to wait before (re)attemptimg connection to IRC server
-#     Default: 30000 - (30 Seconds)
-#
-# irc.maxattempt
-#     Maximum attempts to try IRC server
-#     Default: 20
-#
-
-irc.wct = 30000
-irc.maxattempt = 20
-
-#
-# irc.auto.announce
-#     Time to wait in Minutes to announce random messages from database.
-#     Default: 30 - (30 Minutes)
-#
-
-irc.auto.announce = 240
-
-#
-# irc.autojoin_kick
-#     Autojoin IRC channel if kicked
-#     Default: 1 - Enable
-#              0 - Disable
-#
-
-irc.autojoin_kick = 1
-
-#
-# irc.command_prefix
-#     IRC command prefix
-#     Example: (.)online all
-#
-
-irc.command_prefix = "."
-
-#
-# irc.joinmsg
-# irc.rstmsg
-# irc.kickmsg
-#     TriniChat bot join/restart/kick messages
-#
-
-irc.joinmsg = "Trinity Core With TriniChat $Ver Is Up And Running! Command Trigger Is: $Trigger"
-irc.rstmsg  = "TriniChat Is Restarting, I Will Be Right Back."
-irc.kickmsg = "Do Not Kick Me Again, Severe Actions Will Be Taken!"
-
-#
-# irc.chan_#
-# wow.chan_#
-#     IRC and WOW channels to link. Leave # out of IRC channel. Both channels _ARE_ case sensitive
-#     NOTE: you can have more than 1 IRC channel linked to wow channels, as in example:
-#     Example: irc.chan_1 = "Trinity"
-#              irc.chan_2 = "trinity2"
-#              wow.chan_1 = "world"
-#              wow.chan_2 = "LookingForGroup"
-#
-# irc.pass_#
-#     Passwords for said IRC channels (IRC server side)
-#    Example:
-#        irc.pass_1 = "password"     password for irc channel #1
-#        irc.pass_2 = "password2"     password for irc channel #2
-
-irc.chan_1 = "IRC_CHAN1"
-wow.chan_1 = "WOW_CHAN1"
-irc.pass_1 = ""
-
-#
-# irc.StatusChannel
-#     Channel Number To Display Status Messages In (AuctionHouse, Levels, Deaths, Etc)
-#     Default: 1 - Channel ID 1
-#
-# irc.AnnounceChannel
-#     Channel Number To Display Announcements In (Announces, Notifies, Event)
-#     Default: 1 - Channel ID 1
-#
-
-irc.StatusChannel = 1
-irc.AnnounceChannel = 1
-
-#
-# irc.op_gm_login
-#     Op The GM In All Channels The Bot Is On When They Log In To TriniChat
-#     Default: 0 - Disable
-#              1 - Enable
-# irc.op_gm_level
-#     The Minimum GM Level Required To Have The Bot Op The User
-#     Default: 5 - GM Level 5
-#
-
-irc.op_gm_login = 0
-irc.op_gm_level = 3
-
-#
-# irc.ajoin (Experimental/Under Development)
-#     Force players to autojoin a WOW in game channel
-#     Atleast one player must be in the channel on server start, and atleast one person online for invite to work
-#     Default: 0 - Disable
-#              1 - Enable
-#
-# irc.ajchan
-#     Channel to join if above is Enabled.
-#
-
-irc.ajoin = 1
-irc.ajchan = "AUTOJOIN_CHANNEL"
-
-#
-# irc.online.result
-#     Maximum number of results per line for the online command
-#
-
-irc.online.result = 30
-
-#
-# chat.*** (Defineable Strings) (maybe more in future)
-#     wow_* - String is displayed in IRC channel
-#     irc_* - String is displayed in WOW channel
-#     Options: $Name, $Level, $Msg, $GM (not all options work in every string)
-#
-#     USING CORE DEFAULTS! DISABLED FOLLOWING OPTIONS!
-#
-#chat.wow_irc = "\003<WoW>[\002$Name($Level)\002\003] $Msg"
-#chat.irc_wow = "\003<IRC>[$Name]: $Msg"
-#chat.join_wow = "\00312>>\00304 $GM$Name\003 Joined The $Channel Channel!"
-#chat.join_irc = "\003[$Name]: Has Joined IRC!"
-#chat.leave_wow = "\00312<<\00304 $GM$Name\003 Left The $Channel Channel!"
-#chat.leave_irc = "\003[$Name]: Has Left IRC!"
-#chat.change_nick = "\003<> $Name Is Now Known As $NewName!"
-
-#
-# Botmask
-#     This defines what the bot announces, if its 0 everything is disabled
-#     simply add the values of the elements you want to create this mask.
-#     Example: WoW join/leaves are 1 and IRC join/leaves are 2, if you want both of these active then the BotMask is 3.
-#       (1)Display WoW Chan Join/Leaves In IRC
-#       (2)Display IRC Chan Join/Leaves/NickChanges In WoW
-#       (4)Display Unknown Command Message When Trigger Is Used And No Command Exists
-#       (8)Announce Security Level > 0 As GM At Login
-#       (16)Announce GM In GM ON State AS GM At Login
-#       (32)Return Errors To Notice. (If disabled then default is Private Message)
-#       (64)Display WoW Status Messages (Levels/Deaths)
-#       (128)Display Nick Changes From IRC In WOW
-#       (256)Display WoW Announces/Notifies In IRC
-#       (512)Do Not Let Players Use Commands On Higher GM Level Players
-#       (1024)Enable AuctionHouse Announcements !!DISSABLED!!
-#
-
-Botmask = 257
-
-#
-# irc.gmlog
-#     Minimum GM level to not show login/pass info in IRC logs
-#
-# irc.logfile.prefix
-#     The prefix of the IRC logfile. Directories can be added here.
-#     Example: "IRC/IRC_" outputs IRC_YYYY-MM-DD.log to the IRC subdirectory in your logs dir
-#
-# irc.logchannel
-#      Specefies the channel where logged output gets broadcasted.
-#      Default: "" (none)
-#
-# irc.logchannelpw
-#     The password for the log channel.
-#
-# irc.logmask
-#     Bitmask, see Botmask for explanation. Determines what gets logged to the logchannel.
-#     (0) Do not broadcast into logchannel.
-#     (1) Broadcast IRC Commands into logchannel.
-#     (2) Broadcast Ingame GM Commands into logchannel.
-#     (3) Broadcast both IRC Commands and GM Commands into logchannel.
-
-irc.gmlog = 1
-irc.logfile.prefix = "IRC_"
-irc.logchannel = ""
-irc.logchannelpw = ""
-irc.logmask = 0
-
-#
-# irc.fun.games (Experimental/Under Development)
-#     Enable TriniChat Games
-#     Default: 0 - Disable
-#              1 - Enable
-#
-
-irc.fun.games = 0
-
-#
-# irc.gm#
-#     GM tag to append to (GM onjoin / online command) IRC color codes are acceptable
-#
-
-irc.gm1 = "[Moderator]"
-irc.gm2 = "[Game Master]"
-irc.gm3 = "[BugTracker]"
-irc.gm4 = "[DevTeam Admin]"
-irc.gm5 = "[SysOP]"

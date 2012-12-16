@@ -26,6 +26,7 @@
 #include "BattlegroundMgr.h"
 #include "Item.h"
 #include "AuctionHouseMgr.h"
+#include "CalendarMgr.h"
 #include "AuctionHouseBot.h"
 
 MailSender::MailSender(Object* sender, MailStationery stationery) : m_stationery(stationery)
@@ -40,10 +41,10 @@ MailSender::MailSender(Object* sender, MailStationery stationery) : m_stationery
             m_messageType = MAIL_GAMEOBJECT;
             m_senderId = sender->GetEntry();
             break;
-        case TYPEID_ITEM:
+        /*case TYPEID_ITEM:
             m_messageType = MAIL_ITEM;
             m_senderId = sender->GetEntry();
-            break;
+            break;*/
         case TYPEID_PLAYER:
             m_messageType = MAIL_NORMAL;
             m_senderId = sender->GetGUIDLow();
@@ -51,9 +52,14 @@ MailSender::MailSender(Object* sender, MailStationery stationery) : m_stationery
         default:
             m_messageType = MAIL_NORMAL;
             m_senderId = 0;                                 // will show mail from not existed player
-            sLog->outError("MailSender::MailSender - Mail have unexpected sender typeid (%u)", sender->GetTypeId());
+            sLog->outError(LOG_FILTER_GENERAL, "MailSender::MailSender - Mail have unexpected sender typeid (%u)", sender->GetTypeId());
             break;
     }
+}
+
+MailSender::MailSender(CalendarEvent* sender)
+    : m_messageType(MAIL_CALENDAR), m_senderId(sender->GetEventId()), m_stationery(MAIL_STATIONERY_DEFAULT) // what stationery we should use here?
+{
 }
 
 MailSender::MailSender(AuctionEntry* sender)
@@ -178,13 +184,13 @@ void MailDraft::SendMailTo(SQLTransaction& trans, MailReceiver const& receiver, 
         prepareItems(pReceiver, trans);                            // generate mail template items
 
     uint32 mailId = sObjectMgr->GenerateMailID();
-
+	
     if (receiver.GetPlayerGUIDLow() == auctionbot.GetAHBplayerGUID())
     {
         if (sender.GetMailMessageType() == MAIL_AUCTION)        // auction mail with items
             deleteIncludedItems(trans, true);
         return;
-    }
+    }	
 
     time_t deliver_time = time(NULL) + deliver_delay;
 
@@ -288,60 +294,61 @@ void MailDraft::SendMailTo(SQLTransaction& trans, MailReceiver const& receiver, 
 
 void WorldSession::SendExternalMails()
 {
-   sLog->outDetail("EXTERNAL MAIL> Sending mails in queue...");
+    sLog->outDebug(LOG_FILTER_CHARACTER, "External Mail> Sending mails in queue...");
+	
+    PreparedStatement* stmt = CharacterDatabase.GetPreparedStatement(CHAR_GET_EXTERNAL_MAIL);
+    PreparedQueryResult result = CharacterDatabase.Query(stmt);
+    if (!result)
+    {
+        sLog->outDebug(LOG_FILTER_CHARACTER, "External Mail> No mails in queue...");
+        return;
+    }
 
-   PreparedStatement* stmt = CharacterDatabase.GetPreparedStatement(CHAR_GET_EXTERNAL_MAIL);
-   PreparedQueryResult result = CharacterDatabase.Query(stmt);
-   if (!result)
-   {
-       sLog->outDetail("EXTERNAL MAIL> No mails in queue...");
-       return;
-   }
+    SQLTransaction trans = CharacterDatabase.BeginTransaction();
 
-   SQLTransaction trans = CharacterDatabase.BeginTransaction();
+    MailDraft* mail = NULL;
 
-   MailDraft* mail = NULL;
+    do
+    {
+        Field *fields = result->Fetch();
+        uint32 id = fields[0].GetUInt32();
+        uint32 receiver_guid = fields[1].GetUInt32();
+        std::string subject = fields[2].GetString();
+        std::string body = fields[3].GetString();
+        uint32 money = fields[4].GetUInt32();
+        uint32 itemId = fields[5].GetUInt32();
+        uint32 itemCount = fields[6].GetUInt32();	
 
-   do
-   {
-       Field *fields = result->Fetch();
-       uint32 id = fields[0].GetUInt32();
-       uint64 receiver_guid = fields[1].GetUInt32();
-       std::string subject = fields[2].GetString();
-       std::string body = fields[3].GetString();
-       uint32 money = fields[4].GetUInt32();
-       uint32 itemId = fields[5].GetUInt32();
-       uint32 itemCount = fields[6].GetUInt32();
+        Player *receiver = ObjectAccessor::FindPlayer(receiver_guid);
 
-       Player *receiver = ObjectAccessor::FindPlayer(MAKE_NEW_GUID(receiver_guid, 0, HIGHGUID_PLAYER));
+        mail = new MailDraft(subject, body);	
+	
+        if (money)	
+        {
+            sLog->outDebug(LOG_FILTER_CHARACTER, "External Mail> Adding money");
+            mail->AddMoney(money);
+        }
 
-       mail = new MailDraft(subject, body);
+        if (itemId)	
+        {
+             sLog->outDebug(LOG_FILTER_CHARACTER, "External Mail> Adding %u of item with id %u", itemCount, itemId);
+             if(Item* mailItem = Item::CreateItem(itemId, itemCount))	
+             {
+                 mailItem->SaveToDB(trans);	
+                 mail->AddItem(mailItem);
+             }	
+        }	
 
-       if (money)
-       {
-           sLog->outDetail("EXTERNAL MAIL> Adding money");
-           mail->AddMoney(money);
-       }
+        mail->SendMailTo(trans, receiver ? receiver : MailReceiver(receiver_guid), MailSender(MAIL_NORMAL, 0, MAIL_STATIONERY_GM), MAIL_CHECK_MASK_RETURNED);
+        delete mail;
 
-       if (itemId)
-       {
-           sLog->outDetail("EXTERNAL MAIL> Adding %u of item with id %u", itemCount, itemId);
-           Item* mailItem = Item::CreateItem(itemId, itemCount);
-           mailItem->SaveToDB(trans);
-           mail->AddItem(mailItem);
-       }
+        stmt = CharacterDatabase.GetPreparedStatement(CHAR_DEL_EXTERNAL_MAIL);
+        stmt->setUInt32(0, id);
+        trans->Append(stmt);
 
-       mail->SendMailTo(trans, receiver ? receiver : MailReceiver(receiver_guid), MailSender(MAIL_NORMAL, 0, MAIL_STATIONERY_GM), MAIL_CHECK_MASK_RETURNED);
-       delete mail;
-
-       stmt = CharacterDatabase.GetPreparedStatement(CHAR_DEL_EXTERNAL_MAIL);
-       stmt->setUInt32(0, id);
-       trans->Append(stmt);
-
-       sLog->outDetail("EXTERNAL MAIL> Mail sent");
-   }
-   while (result->NextRow());
-
+        sLog->outDebug(LOG_FILTER_CHARACTER, "External Mail> Mail sent");
+   } while (result->NextRow());
+	
    CharacterDatabase.CommitTransaction(trans);
-   sLog->outDetail("EXTERNAL MAIL> All Mails Sent...");
+   sLog->outDebug(LOG_FILTER_CHARACTER, "External Mail> All Mails Sent...");	
 }

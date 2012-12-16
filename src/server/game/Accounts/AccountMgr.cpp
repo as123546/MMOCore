@@ -16,12 +16,13 @@
  * with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "DatabaseEnv.h"
 #include "AccountMgr.h"
+#include "DatabaseEnv.h"
 #include "ObjectAccessor.h"
 #include "Player.h"
 #include "Util.h"
 #include "SHA1.h"
+#include "WorldSession.h"
 
 namespace AccountMgr
 {
@@ -91,7 +92,12 @@ AccountOpResult DeleteAccount(uint32 accountId)
     stmt = CharacterDatabase.GetPreparedStatement(CHAR_DEL_TUTORIALS);
     stmt->setUInt32(0, accountId);
     CharacterDatabase.Execute(stmt);
+
     stmt = CharacterDatabase.GetPreparedStatement(CHAR_DEL_ACCOUNT_DATA);
+    stmt->setUInt32(0, accountId);
+    CharacterDatabase.Execute(stmt);
+
+    stmt = CharacterDatabase.GetPreparedStatement(CHAR_DEL_CHARACTER_BAN);
     stmt->setUInt32(0, accountId);
     CharacterDatabase.Execute(stmt);
 
@@ -106,6 +112,10 @@ AccountOpResult DeleteAccount(uint32 accountId)
     trans->Append(stmt);
 
     stmt = LoginDatabase.GetPreparedStatement(LOGIN_DEL_REALM_CHARACTERS);
+    stmt->setUInt32(0, accountId);
+    trans->Append(stmt);
+
+    stmt = LoginDatabase.GetPreparedStatement(LOGIN_DEL_ACCOUNT_BANNED);
     stmt->setUInt32(0, accountId);
     trans->Append(stmt);
 
@@ -167,7 +177,7 @@ AccountOpResult ChangePassword(uint32 accountId, std::string newPassword)
     return AOR_OK;
 }
 
-uint32 GetId(std::string username)
+uint32 GetId(std::string const& username)
 {
     PreparedStatement* stmt = LoginDatabase.GetPreparedStatement(LOGIN_GET_ACCOUNT_ID_BY_USERNAME);
     stmt->setString(0, username);
@@ -256,7 +266,7 @@ bool normalizeString(std::string& utf8String)
     return WStrToUtf8(buffer, maxLength, utf8String);
 }
 
-std::string CalculateShaPassHash(std::string& name, std::string& password)
+std::string CalculateShaPassHash(std::string const& name, std::string const& password)
 {
     SHA1Hash sha;
     sha.Initialize();
@@ -265,10 +275,7 @@ std::string CalculateShaPassHash(std::string& name, std::string& password)
     sha.UpdateData(password);
     sha.Finalize();
 
-    std::string encoded;
-    hexEncodeByteArray(sha.GetDigest(), sha.GetLength(), encoded);
-
-    return encoded;
+    return ByteArrayToHexStr(sha.GetDigest(), sha.GetLength());
 }
 
 uint32 VipDaysLeft(uint32 accountId)
@@ -337,14 +344,14 @@ void DeleteInactiveAccounts()
                continue;
 
            // Output account deletion and delete
-           sLog->outString("Automatic account deletion: %s (%u)", accountName.c_str(), accountId);
+           sLog->outInfo(LOG_FILTER_SERVER_LOADING, "Automatic account deletion: %s (%u)", accountName.c_str(), accountId);
            DeleteAccount(accountId);
 
        } while (result->NextRow());
    }
    }
    else {
-	sLog->outString("Automatic account deletion is disabled");
+	sLog->outInfo(LOG_FILTER_SERVER_LOADING, "Automatic account deletion is disabled");
    }
 }
 

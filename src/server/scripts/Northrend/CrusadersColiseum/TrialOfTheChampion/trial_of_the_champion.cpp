@@ -15,9 +15,23 @@
  * with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "ScriptPCH.h"
+/* ScriptData
+SDName: Trial Of the Champion
+SD%Complete:
+SDComment:
+SDCategory: trial_of_the_champion
+EndScriptData */
+
+/* ContentData
+npc_announcer_toc5
+EndContentData */
+
+#include "ScriptMgr.h"
+#include "ScriptedCreature.h"
+#include "ScriptedGossip.h"
 #include "trial_of_the_champion.h"
 #include "Vehicle.h"
+#include "Player.h"
 
 #define GOSSIP_START_EVENT1     "I'm ready to start challenge."
 #define GOSSIP_START_EVENT2     "I'm ready for the next challenge."
